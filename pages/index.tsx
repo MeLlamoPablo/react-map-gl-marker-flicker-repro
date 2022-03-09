@@ -4,6 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import Supercluster from "supercluster";
 import { useMemo, useRef, useState } from "react";
 import WebMercatorViewport from "@math.gl/web-mercator";
+import { useDebounce } from "../hooks/useDebounce";
 
 const TEAMS = [
   {
@@ -186,12 +187,14 @@ const Home: NextPage = () => {
     height: 800,
   });
 
+  const debouncedViewState = useDebounce(viewState, 125);
+
   const markers = useMemo(() => {
-    const mercator = new WebMercatorViewport(viewState);
+    const mercator = new WebMercatorViewport(debouncedViewState);
     const [[south, west], [north, east]] = mercator.getBounds();
     const clusters = index.getClusters(
       [south - 1, west - 1, north + 1, east + 1],
-      Math.round(viewState.zoom)
+      Math.round(debouncedViewState.zoom)
     );
 
     return clusters.map((cluster) => {
@@ -209,7 +212,7 @@ const Home: NextPage = () => {
                 zoom:
                   typeof cluster.id === "number"
                     ? index.getClusterExpansionZoom(cluster.id)
-                    : viewState.zoom,
+                    : debouncedViewState.zoom,
               });
             }}
           >
@@ -243,7 +246,7 @@ const Home: NextPage = () => {
         </Marker>
       );
     });
-  }, [viewState]);
+  }, [debouncedViewState]);
 
   return (
     <div style={{ display: "flex", width: "100%", justifyContent: "center" }}>
